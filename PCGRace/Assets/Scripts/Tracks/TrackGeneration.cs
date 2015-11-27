@@ -11,11 +11,13 @@ public class TrackGeneration : MonoBehaviour {
 
 	public float roadWallSize = 3f;
 
+	public Vector2 radius = 20f * Vector2.one, frequency = Vector2.one;
+
 	public Material trackMaterial;
 	
 	private MeshBuilder meshBuilder = new MeshBuilder ();
 
-	private Vector3[] centerTrackPoints, sideATrackPoints, sideBTrackPoints;
+	private Vector3[] centerTrackPoints;
 
 	void Start() {
 		GenerateTrack ();
@@ -23,27 +25,18 @@ public class TrackGeneration : MonoBehaviour {
 
 	public void GenerateTrack() {
 		Vector3 point = Vector3.zero;
-		float radiusX = 10f, radiusY = 20f;
+
 		float radiusAmount = 0f;
 
 		centerTrackPoints = new Vector3[curvePoints];
-		sideATrackPoints = new Vector3[curvePoints];
-		sideBTrackPoints = new Vector3[curvePoints];
 
 		for (int i = 0; i < curvePoints; i++)
 		{
 			radiusAmount = ((float)i / curvePoints) * (2*Mathf.PI);
-			point = new Vector3(radiusX * Mathf.Cos (radiusAmount), 0f, radiusY * Mathf.Sin (radiusAmount));//+ 
-			//new Vector3(Random.Range (-0.5f, 0.5f), 0f, Random.Range (-0.5f, 0.5f));
+			point = new Vector3(radius.x * Mathf.Cos (frequency.x * radiusAmount), 0f, radius.y * Mathf.Sin (frequency.y * radiusAmount));
 			
 			point = radiusSize * point;
-		
-//			Vector3 crossVector = Vector3.Cross(point - lastPoint, Vector3.up);
-
 			centerTrackPoints[i] = point;
-//			sideATrackPoints[i] = point + 0.5f * roadSize * crossVector.normalized;
-//			sideBTrackPoints[i] = point - 0.5f * roadSize * crossVector.normalized;
-
 		}
 		
 		GameObject trackObject = GenerateTrackMesh (centerTrackPoints);
