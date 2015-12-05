@@ -1,12 +1,13 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class TrackGeneration : MonoBehaviour {
 
 	public int curvePoints = 30;
 
-	public float radiusSize = 10f;
-	
+	public float radiusSizeFactor = 10f;
+
 	public float roadSize = 20f;
 
 	public float roadWallSize = 3f;
@@ -14,16 +15,14 @@ public class TrackGeneration : MonoBehaviour {
 	public Vector2 radius = 20f * Vector2.one, frequency = Vector2.one;
 
 	public Material trackMaterial;
-	
-	private MeshBuilder meshBuilder = new MeshBuilder ();
 
 	private Vector3[] centerTrackPoints;
 
-	void Start() {
-		GenerateTrack ();
-	}
-
+	private List<Vector3> trackPoints = new List<Vector3>();
+	
 	public void GenerateTrack() {
+		trackPoints.Clear();
+
 		Vector3 point = Vector3.zero;
 
 		float radiusAmount = 0f;
@@ -34,13 +33,14 @@ public class TrackGeneration : MonoBehaviour {
 		{
 			radiusAmount = ((float)i / curvePoints) * (2*Mathf.PI);
 			point = new Vector3(radius.x * Mathf.Cos (frequency.x * radiusAmount), 0f, radius.y * Mathf.Sin (frequency.y * radiusAmount));
-			
-			point = radiusSize * point;
+
+			point = point * radiusSizeFactor;
 			centerTrackPoints[i] = point;
+
+			trackPoints.Add (point);
 		}
 		
 		GameObject trackObject = GenerateTrackMesh (centerTrackPoints);
-		trackObject.name = "Track";
 		trackObject.transform.parent = transform;
 
 		GameObject wallObject = GenerateRoadWallsMeshes (centerTrackPoints);
@@ -48,6 +48,8 @@ public class TrackGeneration : MonoBehaviour {
 	}
 
 	GameObject GenerateTrackMesh(Vector3[] points) {
+
+		MeshBuilder meshBuilder = new MeshBuilder();
 
 		Vector3 lastPoint = points[points.Length - 1];
 
@@ -68,11 +70,11 @@ public class TrackGeneration : MonoBehaviour {
 			lastPoint = point;
 		}
 		
-		return GenerateObject( GenerateCurveTriangles (meshBuilder) );
+		return GenerateObject( GenerateCurveTriangles (meshBuilder), "Track");
 	}
 
 	GameObject GenerateRoadWallsMeshes(Vector3[] points) {
-		
+
 		Vector3 lastPoint = points[points.Length - 1];
 		
 		Vector3 point;
@@ -105,13 +107,18 @@ public class TrackGeneration : MonoBehaviour {
 			lastPoint = point;
 		}
 
-		GameObject roadWallsObject = new GameObject ("Road Walls");
+		GameObject roadWallsObject;
 
-		GameObject roadWallSideA = GenerateObject( GenerateCurveTriangles (meshBuilderWall1, true) );
-		GameObject roadWallSideB = GenerateObject(  GenerateCurveTriangles (meshBuilderWall2, true) );
+		Transform roadWallsTransform = transform.Find ("Track").Find ("Road Walls");
 
-		roadWallSideA.name = "Road Wall Side A";
-		roadWallSideB.name = "Road Wall Side B";
+		if (roadWallsTransform == null) {
+			roadWallsObject = new GameObject ("Road Walls");
+		} else {
+			roadWallsObject = roadWallsTransform.gameObject;
+		}
+
+		GameObject roadWallSideA = GenerateObject( GenerateCurveTriangles (meshBuilderWall1, true), "Road Wall Side A");
+		GameObject roadWallSideB = GenerateObject(  GenerateCurveTriangles (meshBuilderWall2, true), "Road Wall Side B" );
 
 		roadWallSideA.transform.parent = roadWallsObject.transform;
 		roadWallSideB.transform.parent = roadWallsObject.transform;
@@ -151,10 +158,25 @@ public class TrackGeneration : MonoBehaviour {
 
 	}
 
-	GameObject GenerateObject(MeshBuilder meshBuilder) {
-		GameObject go = new GameObject ();
-		go.AddComponent<MeshFilter> ().mesh = meshBuilder.CreateMesh ();
-		go.AddComponent<MeshRenderer> ().material = trackMaterial;
+	GameObject GenerateObject(MeshBuilder meshBuilder, string objectName) {
+
+		GameObject go; // Object to be created or modified
+
+		Transform to = transform.FindDeepChild(objectName); // Verify if object already exists
+
+		if (to == null) {
+			go = new GameObject (objectName);
+
+			go.AddComponent<MeshFilter> ().mesh = meshBuilder.CreateMesh ();
+			go.AddComponent<MeshRenderer> ().material = trackMaterial;
+		} else {
+			go = to.gameObject;
+
+			go.GetComponent<MeshFilter> ().mesh = meshBuilder.CreateMesh ();
+			go.GetComponent<MeshRenderer> ().material = trackMaterial;
+		}
+
+
 		
 		return go;
 	}
@@ -163,7 +185,26 @@ public class TrackGeneration : MonoBehaviour {
 	{
 		Gizmos.color = Color.black;
 		
-		for (int i = 0; i < meshBuilder.Vertices.Count; i++)
-			Gizmos.DrawSphere(transform.TransformPoint(meshBuilder.Vertices[i]), 0.5f);
+		for (int i = 0; i < trackPoints.Count; i++)
+			Gizmos.DrawSphere(transform.TransformPoint(trackPoints[i]), 0.5f);
+	}
+}
+
+
+public static class TransformDeepChildExtension
+{
+	//Breadth-first search
+	public static Transform FindDeepChild(this Transform aParent, string aName)
+	{
+		var result = aParent.Find(aName);
+		if (result != null)
+			return result;
+		foreach(Transform child in aParent)
+		{
+			result = child.FindDeepChild(aName);
+			if (result != null)
+				return result;
+		}
+		return null;
 	}
 }
