@@ -2,9 +2,10 @@
 using System.Collections;
 using System.Collections.Generic;
 
+[RequireComponent(typeof(BezierSpline))]
 public class TrackGeneration : MonoBehaviour {
 
-	public int curvePoints = 30;
+	public int curvePoints = 32;
 
 	public float radiusSizeFactor = 10f;
 
@@ -19,7 +20,9 @@ public class TrackGeneration : MonoBehaviour {
 	private Vector3[] centerTrackPoints;
 
 	private List<Vector3> trackPoints = new List<Vector3>();
-	
+
+	private BezierSpline bezierSpline;
+
 	public void GenerateTrack() {
 		trackPoints.Clear();
 
@@ -28,6 +31,13 @@ public class TrackGeneration : MonoBehaviour {
 		float radiusAmount = 0f;
 
 		centerTrackPoints = new Vector3[curvePoints];
+
+		// Set Curves on Bezier Spline
+		bezierSpline = GetComponent<BezierSpline> ();
+		bezierSpline.Reset ();
+//		bezierSpline.ClearControlPoints ();
+		bezierSpline.Loop = true;
+		bezierSpline.OnBezierPointChanged = UpdateTrackMesh;
 
 		for (int i = 0; i < curvePoints; i++)
 		{
@@ -38,8 +48,26 @@ public class TrackGeneration : MonoBehaviour {
 			centerTrackPoints[i] = point;
 
 			trackPoints.Add (point);
+
+			// Set points in the Bezier curve
+			if (i > 0 && i % 3 == 0)
+				bezierSpline.AddCurve ();
+			
+			bezierSpline.SetControlPoint (i, point);
 		}
-		
+
+		UpdateTrackMesh ();
+	}
+
+	void UpdateTrackMesh()
+	{
+		int totalPoints = 10 * curvePoints;
+
+		centerTrackPoints = new Vector3[totalPoints];
+
+		for (int i = 0; i < totalPoints; i++)
+			centerTrackPoints [i] = bezierSpline.GetPoint (((float)i)/(totalPoints));
+
 		GameObject trackObject = GenerateTrackMesh (centerTrackPoints);
 		trackObject.transform.parent = transform;
 
