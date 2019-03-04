@@ -1,4 +1,12 @@
 # ProceduralRace
+
+This is **No** racing game/project, it is a track generating project.
+Yeah, just generates tracks ? What so special about it .
+
+Special -
+  Any dynamic racing game **can be** created, with or without just a *little modification*.
+
+
 My #procjam2015 submission: A Unity race game using procedural generation of tracks in C#.
 
 [![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/adrianogil/proceduralrace/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
